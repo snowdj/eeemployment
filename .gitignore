@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+/data/raw_subset_2016.rda
+/data/raw_2016.rda
+ignored/
