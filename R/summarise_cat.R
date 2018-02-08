@@ -1,4 +1,6 @@
-summarise_cat <- function(cleaned_subset) {
+summarise_cat <- function(cleaned_subset, cat) {
+  cat <- enquo(cat)
+
   ## Main job, employee - all jobs - weighted.
   DCMS_Main_Employee_4digit <- cleaned_subset %>%
     dplyr::filter(INECAC05 == 1 & DCMS_main == 1) %>%
