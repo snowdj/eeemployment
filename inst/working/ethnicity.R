@@ -1,5 +1,5 @@
-cat <- dplyr::quo(NATOX7)
-cat_name <- "eu"
+cat <- dplyr::quo(ETHUK11)
+cat_name <- "ethnicity"
 
 # subsetting is useful to be able to use View()
 raw_subset_2016 <- raw_2016 %>%
@@ -13,19 +13,21 @@ raw_subset_2016 <- raw_2016 %>%
     PWTA16,
     INDSC07M,
     INDSC07S,
-    NATOX7
+    SEX,
+    ETHUK11
   )
 
-#nation_lookup <- read.csv("inst/extdata/nation_lookup.csv")
-#devtools::use_data(nation_lookup)
+# ethnicity_lookup <-
+#   read.csv("inst/extdata/ethnicity_lookup.csv", stringsAsFactors = FALSE)
+# devtools::use_data(ethnicity_lookup, overwrite = TRUE)
 
 
 cleaned_subset <- raw_subset_2016 %>%
   dplyr::mutate(SECJMBR = ifelse(SECJMBR == 3, 1, SECJMBR)) %>%
-  dplyr::mutate(NATOX7 = as.integer(!!cat)) %>%
-  dplyr::left_join(nation_lookup, by = c("NATOX7" = "ons_spss_code")) %>%
-  dplyr::rename(NEWNAT = dcms_label2) %>%
-  dplyr::mutate(NEWNAT = as.character(NEWNAT)) %>%
+  dplyr::mutate(ETHUK11 = as.integer(!!cat)) %>%
+  dplyr::left_join(ethnicity_lookup, by = c("ETHUK11" = "ons_spss_code")) %>%
+  dplyr::select(-ETHUK11) %>%
+  dplyr::rename(ETHUK11 = label) %>%
 
   # below was included in SPSS but I can't work out how to make do it for labels, and the values don't appear in the data anyway
   # dplyr::mutate(NSECMJ10 = ifelse(NSECMJ10 == -8, 23, NSECMJ10)) %>%
@@ -34,6 +36,6 @@ cleaned_subset <- raw_subset_2016 %>%
   dplyr::mutate(DCMS_main = ifelse(INDC07M %in% sics, 1, 0)) %>%
   dplyr::mutate(DCMS_second = ifelse(INDC07S %in% sics, 1, 0))
 
-eu <- summarise_cat(cleaned_subset, NATOX7)
+ethnicity <- summarise_cat(cleaned_subset, ETHUK11)
 
-openxlsx::write.xlsx(eu, paste0("eu", ".xlsx"))
+openxlsx::write.xlsx(ethnicity, paste0("ethnicity", ".xlsx"))

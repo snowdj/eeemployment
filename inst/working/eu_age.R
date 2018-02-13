@@ -17,15 +17,15 @@ raw_subset_2016 <- raw_2016 %>%
     AGE
   )
 
-#nation_lookup <- read.csv("inst/extdata/nation_lookup.csv")
-#devtools::use_data(nation_lookup)
+#nation_lookup <- read.csv("inst/extdata/nation_lookup.csv", stringsAsFactors = FALSE)
+#devtools::use_data(nation_lookup, overwrite = TRUE)
 
 
 cleaned_subset <- raw_subset_2016 %>%
   dplyr::mutate(SECJMBR = ifelse(SECJMBR == 3, 1, SECJMBR)) %>%
   dplyr::mutate(NewAge = ifelse(AGE < 30, 29, 30)) %>%
   dplyr::mutate(NATOX7 = as.integer(!!cat)) %>%
-  dplyr::left_join(nation_lookup, by = c("NATOX7" = "ons_spss_code")) %>%
+  dplyr::left_join(eeemployment::nation_lookup, by = c("NATOX7" = "ons_spss_code")) %>%
   dplyr::rename(NEWNAT = dcms_label2) %>%
   dplyr::mutate(NEWNAT = as.character(NEWNAT)) %>%
 
