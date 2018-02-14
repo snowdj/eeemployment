@@ -118,14 +118,28 @@ test <- raw_subset_2016 %>%
 #  dplyr::mutate(DCMS_main = ifelse(INDC07M %in% sics, 1, 0)) %>%
 #  dplyr::mutate(DCMS_second = ifelse(INDC07S %in% sics, 1, 0)) %>%
 
+# make columns
+df <- raw_subset_2016
+df$SECJMBR <- ifelse(df$SECJMBR == 3, 1, df$SECJMBR)
+df$NewAge <- ifelse(df$AGE < 30, 29, 30)
+df <- df[!is.na(df$INDC07M), ]
+agg <- unique(df[ , c("INDC07M", "NewAge")])
 
-dfcheck <- raw_subset_2016
-dfcheck$SECJMBR <- ifelse(dfcheck$SECJMBR == 3, 1, dfcheck$SECJMBR)
-dfcheck$NewAge <- ifelse(dfcheck$AGE < 30, 29, 30)
-dfcheck$mainemployedcount <-
-  ifelse(dfcheck$INDC07M %in% sics & dfcheck$INECAC05 == 1, dfcheck$PWTA16, 0)
-agg <- aggregate(PWTA16 ~ ., data = dfcheck[, c("PWTA16", "INDC07M", "NewAge")], sum)
+# main employed
+df$count <- ifelse(df$INDC07M %in% sics & df$INECAC05 == 1, df$PWTA16, 0)
+agg$mainemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
 
+# main self-employed
+df$count <- ifelse(df$INDC07M %in% sics & df$INECAC05 == 2, df$PWTA16, 0)
+agg$mainselfemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+
+# second employed
+df$count <- ifelse(df$INDC07M %in% sics & df$SECJMBR == 1, df$PWTA16, 0)
+agg$secondemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+
+# second self-employed
+df$count <- ifelse(df$INDC07M %in% sics & df$SECJMBR == 1, df$PWTA16, 0)
+agg$secondselfemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
 
 
   if (exists(df)) dfkeep <- df
