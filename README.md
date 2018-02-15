@@ -12,8 +12,8 @@ INECAC05 and SECJMBR flag whether the job is employed (1) or self-employed (2), 
 There are various categories like sex, age nationality, etc for the different breakdowns.
 for all the industry/occupation sic codes, they only appear when row/participant is employed in that sic
 
-INDC07M: industry sic codes (4 digit) to flag the recipient is employed in that industry
-INDC07S: industry sic codes (4 digit) to flag the recipient is employed in that industry
+INDC07M: industry sic codes (4 digit) to flag the recipient has main employment in that industry
+INDC07S: industry sic codes (4 digit) to flag the recipient has second employment in that industry
 SOC10M: occupation code main job
 SOC10S: occupation code second job
 INECAC05: main job - 1 for employee, 2 for self employed

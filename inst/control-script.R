@@ -30,8 +30,7 @@ raw_subset_2016 <- eeemployment::raw_2016 %>%
     SEX,
     AGES,
     AGE)
-
-library(magrittr)
+raw_subset_2016 <- as.data.frame(raw_subset_2016)
 
 # part 1 - update categories
 
@@ -118,28 +117,141 @@ test <- raw_subset_2016 %>%
 #  dplyr::mutate(DCMS_main = ifelse(INDC07M %in% sics, 1, 0)) %>%
 #  dplyr::mutate(DCMS_second = ifelse(INDC07S %in% sics, 1, 0)) %>%
 
+
+# lookup <- data.frame(
+#   countname = c("mainemployed", "mainselfemployed", "secondemployed", "secondselfemployed"),
+#   sicvar = c("INDC07M", "INDC07M", "INDC07S", "INDC07S"),
+#   emptype = c("INECAC05", "INECAC05", "SECJMBR", "SECJMBR"),
+#   emptypeflag = c(1, 2, 1, 2),
+#   stringsAsFactors = FALSE
+# )
+#
+# for (i in 1:nrow(lookup)) {
+#   r <- unlist(lookup[i, ])
+#   #print(row["sicvar"])
+#   names(df)[names(df) == r["sicvar"]] <- "sic"
+#   df$count <- ifelse(df$sic %in% sics & df[, r["emptype"]] == r["emptypeflag"], df$PWTA16, 0)
+#   aggtemp <- aggregate(count ~ ., data = df[, c("count", "sic", "NewAge")], sum)
+#   names(aggtemp)[names(aggtemp) == "count"] <- r["countname"]
+#   agg <- merge(x = agg, y = aggtemp, all.x = TRUE)
+# }
+
+# REMEMBER - mapping sics have decimal, list of sics dont
+rm(list = ls()[!(ls() %in% c("raw_subset_2016", "sics"))])
 # make columns
-df <- raw_subset_2016
+df <- as.data.frame(raw_subset_2016)
 df$SECJMBR <- ifelse(df$SECJMBR == 3, 1, df$SECJMBR)
 df$NewAge <- ifelse(df$AGE < 30, 29, 30)
-df <- df[!is.na(df$INDC07M), ]
-agg <- unique(df[ , c("INDC07M", "NewAge")])
+sic_mappings <- read.csv("inst/extdata/sic_mappings.csv", stringsAsFactors = FALSE)
+sic_mappings$sic <- sic_mappings$sic * 100
+sic_mappings <- sic_mappings[sic_mappings$sector != "all_dcms", ]
+# agg <- expand.grid(sic = sics, NewAge = unique(df$NewAge)) # for sic breakdowns
+agg <- expand.grid(sector = unique(sic_mappings$sector), NewAge = unique(df$NewAge)) # for sector breakdowns
 
-# main employed
-df$count <- ifelse(df$INDC07M %in% sics & df$INECAC05 == 1, df$PWTA16, 0)
-agg$mainemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+for (i in 1:4) {
+  if (i == 1) {
+    sicvar <- "INDC07M"; emptype <- "INECAC05"; emptypeflag <- 1; countname <- "mainemp"
+  }
+  if (i == 2) {
+    sicvar <- "INDC07S"; emptype <- "SECJMBR"; emptypeflag <- 1; countname <- "secondemp"
+  }
+  if (i == 3) {
+    sicvar <- "INDC07M"; emptype <- "INECAC05"; emptypeflag <- 2; countname <- "mainselfemp"
+  }
+  if (i == 4) {
+    sicvar <- "INDC07S"; emptype <- "SECJMBR"; emptypeflag <- 2; countname <- "secondselfemp"
+  }
+
+  #names(df)[names(df) == sicvar] <- "sic" # rename sic var
+  df$sic <- as.numeric(df[, sicvar])
+
+  # instead of just setting ones we don't want to 0, delete them since we are merging anyway!!! :)
+  dftemp <- df[df$sic %in% sics & df[, emptype] == emptypeflag, ]
+
+
+
+  dftemp$count <- dftemp$PWTA16
+  #df$count <- ifelse(df$sic %in% sics & df[, emptype] == emptypeflag, df$PWTA16, 0)
+
+  #now try merging with much smaller dataset
+  dftemp <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")], all.x = TRUE)
+  dftemp$sic <- NULL # remove sic if we are just doing sectors
+
+  aggtemp <- aggregate(count ~ ., data = dftemp[, c("count", "sector", "NewAge")], sum)
+  names(aggtemp)[names(aggtemp) == "count"] <- countname # rename count var
+  agg <- merge(x = agg, y = aggtemp, all.x = TRUE)
+}
+
+agg$emp <- agg$mainemp + agg$secondemp
+agg$mainemp <- NULL
+agg$secondemp <- NULL
+agg$selfemp <- agg$mainselfemp + agg$secondselfemp
+agg$mainselfemp <- NULL
+agg$secondselfemp <- NULL
+aggemp <- agg[, c("sector", "NewAge", "emp")]
+names(aggemp)[names(aggemp) == "emp"] <- "count"
+
+aggself <- agg[, c("sector", "NewAge", "selfemp")]
+names(aggself)[names(aggself) == "selfemp"] <- "count"
+
+aggfinal <- rbind(aggemp, aggself)
+
+# get CS
+# add CS but keep it blank for now
+
+# drop tourism
+aggfinal <- aggfinal[aggfinal$sector != "tourism", ]
+
+
+agg <- agg[!is.na(agg$main), ]
+agg[is.na(agg)] <- 0
+agg$count <- agg$main + agg$second
+agg$main <- NULL
+agg$second <- NULL
+agg_emp <- agg
+
+agg <- agg[!is.na(agg$main), ]
+agg[is.na(agg)] <- 0
+agg$count <- agg$main + agg$second
+agg$main <- NULL
+agg$second <- NULL
+agg_selfemp <- agg
+
+finalagg <- rbind(agg_emp, agg_selfemp)
+finalagg$sic <- finalagg$sic / 100
+sic_mappings <- read.csv("inst/extdata/sic_mappings.csv", stringsAsFactors = FALSE)
+finalagg <- merge(x = finalagg, y = sic_mappings[, c("sic2", "sector")], all.x = TRUE)
+
+
+
+xtabs(agg)
+table(agg)
+
+identical(final, agg)
+for (i in 1:4) {
+  print(sum(as.numeric(final[, i]) != agg[, i]))
+}
+
+
+
+final <- as.data.frame(final)
+str(final)
 
 # main self-employed
-df$count <- ifelse(df$INDC07M %in% sics & df$INECAC05 == 2, df$PWTA16, 0)
-agg$mainselfemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+df$count <- ifelse(df$INDC07S %in% sics & df$INECAC05 == 2, df$PWTA16, 0)
+aggtemp <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)
+agg <- merge(agg, aggtemp, all = TRUE)
 
 # second employed
 df$count <- ifelse(df$INDC07M %in% sics & df$SECJMBR == 1, df$PWTA16, 0)
-agg$secondemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+aggtemp <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)
+agg <- merge(agg, aggtemp, all = TRUE)
 
 # second self-employed
-df$count <- ifelse(df$INDC07M %in% sics & df$SECJMBR == 1, df$PWTA16, 0)
-agg$secondselfemployed <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)$count
+df$count <- ifelse(df$INDC07S %in% sics & df$SECJMBR == 2, df$PWTA16, 0)
+aggtemp <- aggregate(count ~ ., data = df[, c("count", "INDC07M", "NewAge")], sum)
+agg <- merge(agg, aggtemp, all = TRUE)
+
 
 
   if (exists(df)) dfkeep <- df
