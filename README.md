@@ -65,15 +65,17 @@ S_E_DCMS: Second job, employee - all jobs - weighted. (SECJMBR == 1 & DCMS_secon
 S_SE_DCMS: Second job, self-employed - all jobs - weighted. (SECJMBR == 2 & DCMS_second == 1) 
 
 
-## part 3 
+## part 3 - excel transformations
+for some stuff:
 Then the above tables are joined on to the table format where there is a column of (4digit) sics, and then a flag for each sector, but the columns added are only counts for employed, self-employed, and total. does not differentiate between main and second job.
 
-## part 4
 We then simply join all these tables together into a very wide table with first the column of sics, then columns for all age levels for employed, then self-employed, then total, then similarly for the ethnicity levels etc. so for each category n columns = levels * 3
 
-## part 5
-look at the publication to see what breakdowns are actually needed and in what format.
+for category breakdowns:
+make a category and sic string lookup 19-251820 in spss excel output then lookup this to append to a different sector \* table for each category which each has a sector \* e/se. these summary tables are then used to compile a sector \* e/se + cat table, or whatever the final table format is.
 
+
+## part 4 - final formats
 the main excel file has the normal time series table for total jobs, index; then split by employed, self-employed and for each sub sector by uk region. then there is threeway category + employed/self-employed * sector, with slight variations like different orientations or not splitting e/se.
 Then there is an excel file for each subsector, similar to above but the category breakdowns are time series, mostly the same format, with no e/se split.
 then there is the individual classification which is just time series for each sic
@@ -164,4 +166,7 @@ sector * e/se + nssec
 "Individual SIC" even though some annoymisation had been done, there is more done in the final table below
 sic + description * e/se
 
+## anonymisation rule
+anon any value < 6
+for each row group with a total
 
