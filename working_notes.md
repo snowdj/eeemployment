@@ -98,73 +98,73 @@ Compiled data 20XX
 sector * e/se with %
 
 3.3 - Region (000's)
-              Regions - all DCMS sectors
-              region * e/se with %
-              also "% of DCMS sector jobs in all regions",	"% of all jobs in region"
+Regions - all DCMS sectors
+region * e/se with %
+also "% of DCMS sector jobs in all regions",	"% of all jobs in region"
 
 
-              The below sector sheets are all also
-              region * e/se with %
-              also "% of XXSectorXX jobs in all regions"
-              Gambling and telecoms don't have E and SE columns
+The below sector sheets are all also
+region * e/se with %
+also "% of XXSectorXX jobs in all regions"
+Gambling and telecoms don't have E and SE columns
 
-              3.3a - Civil Society
-              Civil Society - regional
+3.3a - Civil Society
+Civil Society - regional
 
-              3.3b - Creative Industries
-              CI - regional
+3.3b - Creative Industries
+CI - regional
 
-              3.3c - Cultural Sector
-              Cultural sector - regional
+3.3c - Cultural Sector
+Cultural sector - regional
 
-              3.3d - Digital Sector
-              Digital Sector - regional
+3.3d - Digital Sector
+Digital Sector - regional
 
-              3.3e - Gambling
-              Gambling - regional
+3.3e - Gambling
+Gambling - regional
 
-              3.3f - Sport
-              Sport - regional
+3.3f - Sport
+Sport - regional
 
-              3.3g - Telecoms
-              Telecoms - regional
+3.3g - Telecoms
+Telecoms - regional
 
 
-              3.4 - Nationality (000's)
-                                 EU breakdown
-                                 nationality + e/se * sector
+3.4 - Nationality (000's)
+EU breakdown
+nationality + e/se * sector
 
-                                 3.5 - Gender (000's)
-              Gender breakdown
-              sector * e/se + gender with %
+3.5 - Gender (000's)
+Gender breakdown
+sector * e/se + gender with %
 
-              3.6 - Ethnicity (000's)
-                               Ethnicity breakdown
-                               sector * ethnicity with %
+3.6 - Ethnicity (000's)
+Ethnicity breakdown
+sector * ethnicity with %
 
-                               3.7 - Age (000's)
-              possibly from "Age breakdown" but there is less categories, not sure where this calculation was done
-              sector * e/se + age
+3.7 - Age (000's)
+possibly from "Age breakdown" but there is less categories, not sure where this calculation was done
+sector * e/se + age
 
-              3.8 - Qualification (000's)
-                                   Qualification breakdown
-                                   sector * qualification
+3.8 - Qualification (000's)
+Qualification breakdown
+sector * qualification
 
-                                   3.9 - Fulltime Parttime (000's)
-              Full time Part time breakdown
-              sector * ftpt with %
+3.9 - Fulltime Parttime (000's)
+Full time Part time breakdown
+sector * ftpt with %
 
-              3.10 - NS-SEC (000's)
-                             probably "NSSEC breakdown" but has been recategorised as first four columns and second four columns
-                             sector * e/se + nssec
+3.10 - NS-SEC (000's)
+probably "NSSEC breakdown" but has been recategorised as first four columns and second four columns sector * e/se + nssec
 
-                             3.11 - SIC (000's)
-              "Individual SIC" even though some annoymisation had been done, there is more done in the final table below
-              sic + description * e/se
+3.11 - SIC (000's)
+"Individual SIC" even though some annoymisation had been done, there is more done in the final table below sic + description * e/se
 
-              ## anonymisation rule
-              anon any value < 6
+## anonymisation rule
+anon any value < 6
 
-              for each row group with a total (or percentage of total, but I think in this case there is always a total), anon everything if (number of elements) - (number of anon) <= 1
+basically we will round everything under 6k down to zero, rather then just everything under 500.
 
-              if any row group total
+for each row group with a total (or percentage of total, but I think in this case there is always a total), anon everything if (number of elements) - (number of anon) <= 1
+
+then, if there is a total row group, anon elements in the total group if (number of row groups) - (number of corresponding elements in row groups which have been anonymised) <= 1

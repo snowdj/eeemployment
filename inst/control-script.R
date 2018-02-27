@@ -116,12 +116,12 @@ df$nssec <- as.integer(df$NSECMJ10)
 df$nssec <- ifelse(df$nssec %in% 1:4, "More Advantaged Group (NS-SEC 1-4)", df$nssec)
 df$nssec <- ifelse(df$nssec %in% 5:8, "Less Advantaged Group (NS-SEC 5-8)", df$nssec)
 
-#catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
+catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
 #catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
 #catvar <- "dcms_ageband"; catorder <- NA; sheet <- 16; xy <- c(2,8); perc <- FALSE; cattotal <- TRUE
 #catvar <- "qualification"; catorder <- NA; sheet <- 17; xy <- c(2,7); perc <- FALSE; catorder <- c("Degree or equivalent",	"Higher Education",	"A Level or equivalent", "GCSE A* - C or equivalent",	"Other",	"No Qualification"); cattotal <- TRUE
 #catvar <- "ftpt"; catorder <- c("Full time", "Part time"); sheet <- 18; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
-catvar <- "nssec"; catorder <- c("More Advantaged Group (NS-SEC 1-4)", "Less Advantaged Group (NS-SEC 5-8)"); sheet <- 19; xy <- c(2,8); perc <- FALSE; cattotal <- FALSE
+#catvar <- "nssec"; catorder <- c("More Advantaged Group (NS-SEC 1-4)", "Less Advantaged Group (NS-SEC 5-8)"); sheet <- 19; xy <- c(2,8); perc <- FALSE; cattotal <- FALSE
 
 
 if (catvar == "qualification") df <- df[df[, catvar] != "dont know" & !is.na(df[, catvar]), ]
@@ -262,6 +262,15 @@ if (catvar == "ethnicity") aggfinal <- aggfinal[aggfinal$emptype == "total" & ag
 if (catvar == "qualification") aggfinal <- aggfinal[aggfinal$emptype == "total", ]
 if (catvar == "ftpt") aggfinal <- aggfinal[aggfinal$emptype == "total", ]
 
+# final check of numbers
+if (sum(is.na(aggfinal$count)) != 0) stop("missing counts") # 0
+if (sum(aggfinal$count < 0) != 0) stop("negative counts") # 0
+sum(aggfinal$count == 0) # 8
+sum(aggfinal$count >= 0) # 54
+
+# indivdual element anonymisation
+aggfinal$count <- ifelse(aggfinal$count < 6000, 0, aggfinal$count)
+
 # format vaues
 aggfinal$count <- round(aggfinal$count / 1000, 0)
 
@@ -277,7 +286,6 @@ for (emptype in unique(aggfinal$emptype)) {
     if (!all.equal(sort(catorder), sort(colnames(emptable)))) stop("bad catorder input")
     emptable <- emptable[, catorder]
   }
-
 
   total <- rowSums(emptable)
   if (perc) {
