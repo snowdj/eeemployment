@@ -31,7 +31,8 @@ raw_subset_2016 <- eeemployment::raw_2016 %>%
     ETHUK11,
     HIQUL15D,
     FTPT,
-    NSECMJ10)
+    NSECMJ10,
+    SECTRO03)
 
 # part 1 - update categories
 
@@ -59,6 +60,8 @@ rm(list = ls()[!(ls() %in% c("raw_subset_2016", "sics"))])
 # make columns
 df <- as.data.frame(raw_subset_2016)
 df$SECJMBR <- ifelse(df$SECJMBR == 3, 1, df$SECJMBR)
+
+df$cs_flag <- ifelse(df$SECTRO03 != 7 | is.na(df$SECTRO03), 0, 1)
 
 # format columns
 # age - ages is a code (1-15) for the age bands. We want to define our own categories so use age column
@@ -145,7 +148,7 @@ if (breakdown == "sic") {
 if (breakdown == "sector") {
   agg <-
     expand.grid(
-      sector = c(unique(sic_mappings$sector),"civil society", "total_uk"),
+      sector = c(unique(sic_mappings$sector),"civil_society", "total_uk"),
       cat = unique(df[, catvar]),
       stringsAsFactors = FALSE) # for sector breakdowns
 }
@@ -165,31 +168,53 @@ for (i in 1:4) {
     sicvar <- "INDC07S"; emptype <- "SECJMBR"; emptypeflag <- 2; countname <- "secondselfemp"
   }
 
-  # take copy as we want to keep and reuse the originals
-  df$sic <- as.numeric(df[, sicvar])
-
-  # instead of just setting ones we don't want to 0, delete them since we are merging anyway!!! :) we need to do this so that we can merge the sector labels without getting an error - might need to try some base R method instead of merge.
-
-
   #dftemp <- df[df$sic %in% sics & df[, emptype] == emptypeflag, ]
   dftemp <- df[df[, emptype] == emptypeflag, ]
 
-  dftemp$count <- dftemp$PWTA16
-  #df$count <- ifelse(df$sic %in% sics & df[, emptype] == emptypeflag, df$PWTA16, 0)
+  # take copy as we want to keep and reuse the originals
+  dftemp$sic <- as.numeric(dftemp[, sicvar])
 
-  # now try merging with much smaller dataset
-  # doing a merge is necessary since we need to create additional rows where there is overlap between sector categories.
-  # rows for each sector and all_dcms - use inner join
+  # drop missing sics
+  dftemp <- dftemp[!is.na(dftemp$sic), ]
+
+   # instead of just setting ones we don't want to 0, delete them since we are merging anyway!!! :) we need to do this so that we can merge the sector labels without getting an error - might need to try some base R method instead of merge.
+
+  dftemp$count <- dftemp$PWTA16
+
 
   if (breakdown == "sector") {
+    #dftemp <- df[df$sic %in% sics & df[, emptype] == emptypeflag, ]
+    dftemp <- df[df[, emptype] == emptypeflag, ]
+
+    # take copy as we want to keep and reuse the originals
+    dftemp$sic <- as.numeric(dftemp[, sicvar])
+
+    dftemp$count <- dftemp$PWTA16
+
+    # instead of just setting ones we don't want to 0, delete them since we are merging anyway!!! :) we need to do this so that we can merge the sector labels without getting an error - might need to try some base R method instead of merge.
+
+
+     # rows for total UK (all sics)
+    # Note that the code we/spss uses to handle main and second jobs means that some with two jobs gets two counts (times their weighting). However for total UK, spps simply does a weighted count of the e/se columns, INECAC05 and SECJMBR.
+    # need to make this before killing missing sics
+    dftemp_totaluk <- dftemp
+
+
+    # drop missing sics
+    dftemp <- dftemp[!is.na(dftemp$sic), ]
+
+    # inner join subsets df to only contain dcms sics
     dftemp_sectors <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")])
 
-    # rows for total UK (all sics)
-    # Note that the code we/spss uses to handle main and second jobs means that some with two jobs gets two counts (times their weighting). However for total UK, spps simply does a weighted count of the e/se columns, INECAC05 and SECJMBR.
-    dftemp_totaluk <- dftemp
+    # civil society
+    dftemp_cs <- dftemp[dftemp$cs_flag == 1, ]
+    dftemp_cs$sector <- "civil_society"
+    dftemp_cs <- dftemp_cs[, names(dftemp_sectors)] # reorder for rbind
+
     dftemp_totaluk$sector <- "total_uk"
     dftemp_totaluk <- dftemp_totaluk[, names(dftemp_sectors)] # reorder for rbind
-    dftemp <- rbind(dftemp_totaluk, dftemp_sectors)
+
+    dftemp <- rbind(dftemp_totaluk, dftemp_sectors, dftemp_cs)
 
     dftemp$sic <- NULL # remove sic if we are just doing sectors
   }
@@ -307,7 +332,7 @@ for (emptype in unique(aggfinal$emptype)) {
 }
 
 # reorder rows
-final_real <- final[c("civil society", "creative", "culture", "digital", "gambling", "sport", "telecoms", "all_dcms", "total_uk"), ]
+final_real <- final[c("civil_society", "creative", "culture", "digital", "gambling", "sport", "telecoms", "all_dcms", "total_uk"), ]
 
 excel_filename <-
   system.file(
