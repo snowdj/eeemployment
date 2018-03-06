@@ -119,8 +119,8 @@ df$nssec <- as.integer(df$NSECMJ10)
 df$nssec <- ifelse(df$nssec %in% 1:4, "More Advantaged Group (NS-SEC 1-4)", df$nssec)
 df$nssec <- ifelse(df$nssec %in% 5:8, "Less Advantaged Group (NS-SEC 5-8)", df$nssec)
 
-catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
-#catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
+#catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
+catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
 #catvar <- "dcms_ageband"; catorder <- NA; sheet <- 16; xy <- c(2,8); perc <- FALSE; cattotal <- TRUE
 #catvar <- "qualification"; catorder <- NA; sheet <- 17; xy <- c(2,7); perc <- FALSE; catorder <- c("Degree or equivalent",	"Higher Education",	"A Level or equivalent", "GCSE A* - C or equivalent",	"Other",	"No Qualification"); cattotal <- TRUE
 #catvar <- "ftpt"; catorder <- c("Full time", "Part time"); sheet <- 18; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
@@ -148,7 +148,7 @@ if (breakdown == "sic") {
 if (breakdown == "sector") {
   agg <-
     expand.grid(
-      sector = c(unique(sic_mappings$sector),"civil_society", "total_uk"),
+      sector = c(unique(sic_mappings$sector),"civil_society", "total_uk", "overlap"),
       cat = unique(df[, catvar]),
       stringsAsFactors = FALSE) # for sector breakdowns
 }
@@ -168,6 +168,8 @@ for (i in 1:4) {
     sicvar <- "INDC07S"; emptype <- "SECJMBR"; emptypeflag <- 2; countname <- "secondselfemp"
   }
 
+  # set up dftemp for sic leve
+
   #dftemp <- df[df$sic %in% sics & df[, emptype] == emptypeflag, ]
   dftemp <- df[df[, emptype] == emptypeflag, ]
 
@@ -181,7 +183,7 @@ for (i in 1:4) {
 
   dftemp$count <- dftemp$PWTA16
 
-
+  # sector level - regenerates dftemp because we need to keep the missings till later since they go into "uk total"
   if (breakdown == "sector") {
     #dftemp <- df[df$sic %in% sics & df[, emptype] == emptypeflag, ]
     dftemp <- df[df[, emptype] == emptypeflag, ]
@@ -205,16 +207,30 @@ for (i in 1:4) {
 
     # inner join subsets df to only contain dcms sics
     dftemp_sectors <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")])
+    dftemp_sectors <- dftemp_sectors[dftemp_sectors$sector != "all_dcms", ]
 
     # civil society
     dftemp_cs <- dftemp[dftemp$cs_flag == 1, ]
     dftemp_cs$sector <- "civil_society"
     dftemp_cs <- dftemp_cs[, names(dftemp_sectors)] # reorder for rbind
 
+    # make another civil society subset here which intersects with dcms sics, then subtract these values from all_dcms
+    dftemp_all_dcms <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")])
+    dftemp_all_dcms <-
+      dftemp_all_dcms[dftemp_all_dcms$sector == "all_dcms", ]
+    dftemp_all_dcms$sector <- "all_dcms"
+
+    # overlap
+    # make another civil society subset here which intersects with dcms sics, then subtract these values from all_dcms
+    dftemp_all_dcms_overlap <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")])
+    dftemp_all_dcms_overlap <-
+      dftemp_all_dcms_overlap[dftemp_all_dcms_overlap$sector == "all_dcms" & dftemp_all_dcms_overlap$cs_flag == 1, ]
+    dftemp_all_dcms_overlap$sector <- "overlap"
+
     dftemp_totaluk$sector <- "total_uk"
     dftemp_totaluk <- dftemp_totaluk[, names(dftemp_sectors)] # reorder for rbind
 
-    dftemp <- rbind(dftemp_totaluk, dftemp_sectors, dftemp_cs)
+    dftemp <- rbind(dftemp_totaluk, dftemp_sectors, dftemp_cs, dftemp_all_dcms, dftemp_all_dcms_overlap)
 
     dftemp$sic <- NULL # remove sic if we are just doing sectors
   }
@@ -275,6 +291,14 @@ aggtotal$emptype <- "total"
 
 
 aggfinal <- rbind(aggemp, aggself, aggtotal)
+
+aggfinaltest <- aggfinal
+aggfinaltest[aggfinaltest$sector == "all_dcms",]$count <-
+  aggfinaltest[aggfinaltest$sector == "all_dcms",]$count +
+  aggfinaltest[aggfinaltest$sector == "civil_society",]$count -
+  aggfinaltest[aggfinaltest$sector == "overlap",]$count
+
+aggfinal <- aggfinaltest[aggfinaltest$sector != "overlap", ]
 
 # get CS
 # add CS but keep it blank for now
@@ -347,7 +371,7 @@ openxlsx::saveWorkbook(
   wb, file.path("~", "DCMS_Sectors_Economic_Estimates_Employment_2016_tables.xlsx"), overwrite = TRUE)
 
 
-# only all_dcms has descrepancy now
+# only all_dcms has descrepancy now. the raw all_cdms, pre overlap removal matches my numbers with 2016 main workbook.
 
 # explain to penny and olivia that it is too much for my brain to plan how to account for all the different formats straight off the bat, so I will do a few diffferent ones, and then it will be easier to see how to combine them into the same process, with options for different formats.
 
