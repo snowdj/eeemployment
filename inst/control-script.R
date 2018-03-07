@@ -1,5 +1,5 @@
 # devtools::install_version("haven", version = "1.1.0", repos = "http://cran.us.r-project.org")
-# raw_2016 <- haven::read_sav("G:/Economic Estimates/APS/2016/APSP_JD16_CLIENT_PWTA16.sav")
+# raw_2016 <- haven::read_sav("~/Documents/APSP_JD16_CLIENT_PWTA16.sav")
 
 # devtools::use_data(raw_2016)
 
@@ -59,6 +59,7 @@ raw_subset_2016 <- eeemployment::raw_2016 %>%
 rm(list = ls()[!(ls() %in% c("raw_subset_2016", "sics"))])
 # make columns
 df <- as.data.frame(raw_subset_2016)
+#write.csv(df, "~/data/raw_subset_2016.csv")
 df$SECJMBR <- ifelse(df$SECJMBR == 3, 1, df$SECJMBR)
 
 df$cs_flag <- ifelse(df$SECTRO03 != 7 | is.na(df$SECTRO03), 0, 1)
@@ -118,6 +119,7 @@ df$ftpt <- as.character(haven::as_factor(df$FTPT))
 df$nssec <- as.integer(df$NSECMJ10)
 df$nssec <- ifelse(df$nssec %in% 1:4, "More Advantaged Group (NS-SEC 1-4)", df$nssec)
 df$nssec <- ifelse(df$nssec %in% 5:8, "Less Advantaged Group (NS-SEC 5-8)", df$nssec)
+#write.csv(df, "~/data/cleaned_2016_df.csv", row.names = FALSE)
 
 #catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
 catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
