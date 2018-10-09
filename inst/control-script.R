@@ -3,6 +3,25 @@
 
 # devtools::use_data(raw_2016)
 
+# raw_2011 <- haven::read_sav("~/projects/employment/APS2011.sav")
+# devtools::use_data(raw_2011)
+#
+# raw_2012 <- haven::read_sav("~/projects/employment/APS2012.sav")
+# devtools::use_data(raw_2012)
+#
+# raw_2013 <- haven::read_sav("~/projects/employment/APS2013.sav")
+# devtools::use_data(raw_2013)
+#
+# raw_2014 <- haven::read_sav("~/projects/employment/APS2014.sav")
+# devtools::use_data(raw_2014)
+#
+# raw_2015 <- haven::read_sav("~/projects/employment/APS2015.sav")
+# devtools::use_data(raw_2015)
+#
+# raw_2017 <- haven::read_sav("~/projects/employment/APSP_JD17_CLIENT_PWTA17.sav")
+# devtools::use_data(raw_2017)
+
+
 # load_all() will load the raw data every time you run it without reset = FALSE
 devtools::load_all(reset = FALSE)
 
@@ -14,7 +33,8 @@ sics <- c(1820, 2611, 2612, 2620, 2630, 2640, 2680, 3012, 3212, 3220, 3230, 4651
 # I dont understand why there is a value of 0 in NEWNAT for eu and age - I'm  just gonna leave it for now - the row is set as missing in my data
  # can't work out why ethnicity figures don't match
 
-raw_subset_2016 <- eeemployment::raw_2016 %>%
+# 2011 doesn't have INDC07M
+raw_subset_2016 <- eeemployment::raw_2015 %>%
   dplyr::select(
     INDC07M,
     INDC07S,
@@ -22,17 +42,19 @@ raw_subset_2016 <- eeemployment::raw_2016 %>%
     SOC10S,
     INECAC05,
     SECJMBR,
-    PWTA16,
+    PWTA14,
     INDSC07M,
     INDSC07S,
     SEX,
     AGES,
     AGE,
     ETHUK11,
-    HIQUL15D,
+    #HIQUL15D,
     FTPT,
     NSECMJ10,
-    SECTRO03)
+    SECTRO03,
+    GORWKR,
+    GORWK2R)
 
 # part 1 - update categories
 
@@ -103,15 +125,15 @@ df$ethnicity <- as.integer(haven::zap_labels(df$ETHUK1))
 df$ethnicity <- ifelse(df$ethnicity != 1 | is.na(df$ethnicity), "BAME", "White")
 
 #we drop missing and don't know
-df$qualification <- haven::as_factor(df$HIQUL15D)
-levels(df$qualification)[levels(df$qualification)=="Degree or equivalent"] <- "Degree or equivalent"
-levels(df$qualification)[levels(df$qualification)=="Higher education"] <- "Higher Education"
-levels(df$qualification)[levels(df$qualification)=="GCE A level or equivalent"] <- "A Level or equivalent"
-levels(df$qualification)[levels(df$qualification)=="GCSE grades A*-C or equivalent"] <- "GCSE A* - C or equivalent"
-levels(df$qualification)[levels(df$qualification)=="Other qualification"] <- "Other"
-levels(df$qualification)[levels(df$qualification)=="No qualification"] <- "No Qualification"
-levels(df$qualification)[levels(df$qualification)=="Don?t know"] <- "dont know"
-df$qualification <- as.character(df$qualification)
+# df$qualification <- haven::as_factor(df$HIQUL15D)
+# levels(df$qualification)[levels(df$qualification)=="Degree or equivalent"] <- "Degree or equivalent"
+# levels(df$qualification)[levels(df$qualification)=="Higher education"] <- "Higher Education"
+# levels(df$qualification)[levels(df$qualification)=="GCE A level or equivalent"] <- "A Level or equivalent"
+# levels(df$qualification)[levels(df$qualification)=="GCSE grades A*-C or equivalent"] <- "GCSE A* - C or equivalent"
+# levels(df$qualification)[levels(df$qualification)=="Other qualification"] <- "Other"
+# levels(df$qualification)[levels(df$qualification)=="No qualification"] <- "No Qualification"
+# levels(df$qualification)[levels(df$qualification)=="Don?t know"] <- "dont know"
+# df$qualification <- as.character(df$qualification)
 
 # it looks like everything except full time and part time is dropped since the vlookup in 2016 main workbook only looks for  those two values
 df$ftpt <- as.character(haven::as_factor(df$FTPT))
@@ -119,10 +141,20 @@ df$ftpt <- as.character(haven::as_factor(df$FTPT))
 df$nssec <- as.integer(df$NSECMJ10)
 df$nssec <- ifelse(df$nssec %in% 1:4, "More Advantaged Group (NS-SEC 1-4)", df$nssec)
 df$nssec <- ifelse(df$nssec %in% 5:8, "Less Advantaged Group (NS-SEC 5-8)", df$nssec)
-#write.csv(df, "~/data/cleaned_2016_df.csv", row.names = FALSE)
 
-#catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
-catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
+write.csv(df, "~/data/cleaned_2015_df.csv", row.names = FALSE)
+
+# end of data generation for python
+
+
+
+
+
+
+
+
+catvar <- "sex"; catorder <- c("Male", "Female"); sheet <- 14; xy <- c(2,9); perc <- TRUE; cattotal <- TRUE
+#catvar <- "ethnicity"; catorder <- c("White", "BAME"); sheet <- 15; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
 #catvar <- "dcms_ageband"; catorder <- NA; sheet <- 16; xy <- c(2,8); perc <- FALSE; cattotal <- TRUE
 #catvar <- "qualification"; catorder <- NA; sheet <- 17; xy <- c(2,7); perc <- FALSE; catorder <- c("Degree or equivalent",	"Higher Education",	"A Level or equivalent", "GCSE A* - C or equivalent",	"Other",	"No Qualification"); cattotal <- TRUE
 #catvar <- "ftpt"; catorder <- c("Full time", "Part time"); sheet <- 18; xy <- c(2,8); perc <- TRUE; cattotal <- TRUE
@@ -218,9 +250,8 @@ for (i in 1:4) {
 
     # make another civil society subset here which intersects with dcms sics, then subtract these values from all_dcms
     dftemp_all_dcms <- merge(x = dftemp, y = sic_mappings[, c("sic", "sector")])
-    dftemp_all_dcms <-
-      dftemp_all_dcms[dftemp_all_dcms$sector == "all_dcms", ]
-    dftemp_all_dcms$sector <- "all_dcms"
+    dftemp_all_dcms <- dftemp_all_dcms[dftemp_all_dcms$sector == "all_dcms", ]
+    #dftemp_all_dcms$sector <- "all_dcms"
 
     # overlap
     # make another civil society subset here which intersects with dcms sics, then subtract these values from all_dcms
